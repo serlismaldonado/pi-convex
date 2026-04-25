@@ -270,13 +270,9 @@ export default [
         }
         
         teamName = await ctx.ui.input(
-          "Team name (from convex.cloud):",
+          "Team name (from convex.cloud, optional):",
           ""
         ) as string;
-        if (!teamName) {
-          ctx.ui.notify("Team name required", "error");
-          return;
-        }
         
         const useCloud = await ctx.ui.confirm(
           "Cloud deployment?",

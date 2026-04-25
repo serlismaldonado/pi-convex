@@ -210,11 +210,7 @@ export default [
                     ctx.ui.notify("Project name required", "error");
                     return;
                 }
-                teamName = await ctx.ui.input("Team name (from convex.cloud):", "");
-                if (!teamName) {
-                    ctx.ui.notify("Team name required", "error");
-                    return;
-                }
+                teamName = await ctx.ui.input("Team name (from convex.cloud, optional):", "");
                 const useCloud = await ctx.ui.confirm("Cloud deployment?", "Yes = Convex Cloud, No = local dev server");
                 deploymentType = useCloud ? "cloud" : "local";
             }
