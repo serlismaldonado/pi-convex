@@ -330,26 +330,37 @@ export default [
       const result = await execCommand(cmd, targetPath);
       
       if (result.code === 0) {
-        ctx.ui.notify(`Project ${projectName} created!`, "info");
-        
         project = { path: targetPath, name: projectName };
         saveProject(project);
         
-        if (deploymentType === "cloud" && teamName) {
-          const deploymentUrl = `https://${projectName}.convex.cloud`;
-          config.connections[projectName] = {
-            url: deploymentUrl,
+        // Read .env.local to get CONVEX_URL and CONVEX_DEPLOYMENT
+        const envPath = path.join(targetPath, ".env.local");
+        let convexUrl = "";
+        
+        if (fs.existsSync(envPath)) {
+          const envContent = fs.readFileSync(envPath, "utf-8");
+          const urlMatch = envContent.match(/CONVEX_URL=(.+)/);
+          if (urlMatch && urlMatch[1]) {
+            convexUrl = urlMatch[1].trim();
+          }
+        }
+        
+        // Save connection with real URL from .env.local
+        if (deploymentType === "cloud") {
+          const connectionName = projectName;
+          config.connections[connectionName] = {
+            url: convexUrl || `https://${projectName}.convex.cloud`,
             deployKey: "",
             type: "cloud",
-            authType: null
+            authType: "anonymous" // Default to anonymous since convex dev handles auth
           };
-          config.active = projectName;
+          config.active = connectionName;
           saveConfig();
-          ctx.ui.notify(`Connection saved: ${projectName}`, "info");
+          ctx.ui.notify(`Connected: ${connectionName} (${convexUrl || "local"})`, "info");
         }
         
         memory.updateProjectMemory(projectName, targetPath, config.active || "unknown", {});
-        ctx.ui.notify(`Run convex_status to verify`, "info");
+        ctx.ui.notify(`Project ${projectName} created! Run convex_status to verify`, "info");
       } else {
         ctx.ui.notify(`Error: ${result.stderr || result.stdout}`, "error");
       }
