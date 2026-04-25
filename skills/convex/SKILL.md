@@ -7,7 +7,17 @@ description: Routing skill for Convex work. Use when working with Convex databas
 
 Convex extension for Pi - database, backend, queries, mutations, and deployment.
 
-## Current Active Project
+## Current Project
+
+**Project Path:** `{PROJECT_PATH}`
+
+**IMPORTANT:** Always use `{PROJECT_PATH}` as the base directory for all file operations (read, write, bash with cd, etc.).
+
+Example:
+- Correct: `write {PROJECT_PATH}/convex/schema.ts`
+- Wrong: `write convex/schema.ts` (relative to wrong cwd)
+
+## Active Project
 
 {ACTIVE_PROJECT}
 

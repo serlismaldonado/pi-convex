@@ -985,6 +985,7 @@ export default [
     const hasMemory = projectMemory && projectMemory !== "No memory for this project yet.";
     
     const updatedSkill = skillTemplate
+      .replace("{PROJECT_PATH}", currentProject ? currentProject.path : "")
       .replace("{ACTIVE_PROJECT}", currentProject ? `${currentProject.name} (${currentProject.path})` : "Not set")
       .replace("{CONNECTION_INFO}", conn ? `${config.active} - ${conn.url} (${conn.type})` : "Not connected")
       .replace("{TABLES_INFO}", hasMemory ? projectMemory : "No tables discovered yet")
