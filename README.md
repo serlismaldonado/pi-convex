@@ -74,6 +74,8 @@ CONVEX_DEPLOY_KEY='your-key' convex_deploy
 
 ## Create New Project
 
+> **Note:** Creating cloud projects requires being logged in to Convex CLI (`npx convex login`). If not logged in, use anonymous mode for local development only.
+
 ### Interactive
 
 ```
@@ -86,6 +88,7 @@ CONVEX_DEPLOY_KEY='your-key' convex_deploy
 ### Non-Interactive / CI
 
 ```bash
+# Requires: npx convex login (done once per machine)
 CONVEX_PROJECT_NAME=my-app CONVEX_TEAM_NAME=my-team /convex-init
 ```
 
