@@ -220,6 +220,107 @@ export default [
     },
   });
 
+  // ===== INIT COMMAND =====
+
+  pi.registerCommand("convex-init", {
+    description: "Create a new Convex project (non-interactive, CI-friendly)",
+    async handler(_args, ctx) {
+      const isCI = !process.stdin.isTTY;
+      
+      if (!ctx.hasUI && !isCI) {
+        ctx.ui.notify("Interactive mode required", "error");
+        return;
+      }
+
+      let projectName: string;
+      let teamName: string;
+      let deploymentType: string;
+      
+      if (isCI) {
+        projectName = process.env.CONVEX_PROJECT_NAME || "my-project";
+        teamName = process.env.CONVEX_TEAM_NAME || "";
+        deploymentType = process.env.CONVEX_DEPLOYMENT_TYPE || "cloud";
+        ctx.ui.notify(`[CI] Creating project: ${projectName}`, "info");
+      } else {
+        projectName = await ctx.ui.input(
+          "Project name:",
+          ctx.cwd.split("/").pop() || ""
+        ) as string;
+        if (!projectName) {
+          ctx.ui.notify("Project name required", "error");
+          return;
+        }
+        
+        teamName = await ctx.ui.input(
+          "Team name (from convex.cloud):",
+          ""
+        ) as string;
+        if (!teamName) {
+          ctx.ui.notify("Team name required", "error");
+          return;
+        }
+        
+        const useCloud = await ctx.ui.confirm(
+          "Cloud deployment?",
+          "Yes = Convex Cloud, No = local dev server"
+        );
+        deploymentType = useCloud ? "cloud" : "local";
+      }
+
+      const fs = require("fs") as typeof import("fs");
+      const targetPath = ctx.cwd;
+      
+      if (!fs.existsSync(targetPath)) {
+        ctx.ui.notify(`Creating directory: ${targetPath}`, "info");
+        fs.mkdirSync(targetPath, { recursive: true });
+      }
+      
+      const packageJsonPath = require("path").join(targetPath, "package.json");
+      if (!fs.existsSync(packageJsonPath)) {
+        ctx.ui.notify("Creating package.json...", "info");
+        fs.writeFileSync(packageJsonPath, JSON.stringify({
+          name: projectName,
+          version: "0.0.1",
+          private: true,
+          scripts: { dev: "convex dev", deploy: "convex deploy", start: "convex dev" }
+        }, null, 2));
+      }
+      
+      ctx.ui.notify(`Initializing Convex in ${targetPath}...`, "info");
+      
+      let cmd = "npx convex dev --configure new --typecheck=disable";
+      cmd += ` --project ${projectName}`;
+      if (teamName) cmd += ` --team ${teamName}`;
+      if (deploymentType === "cloud") cmd += " --dev-deployment cloud";
+      
+      const result = await execCommand(cmd, targetPath);
+      
+      if (result.code === 0) {
+        ctx.ui.notify(`Project ${projectName} created!`, "info");
+        
+        project = { path: targetPath, name: projectName };
+        saveProject(project);
+        
+        if (deploymentType === "cloud" && teamName) {
+          const deploymentUrl = `https://${projectName}.convex.cloud`;
+          config.connections[projectName] = {
+            url: deploymentUrl,
+            deployKey: "",
+            type: "cloud"
+          };
+          config.active = projectName;
+          saveConfig();
+          ctx.ui.notify(`Connection saved: ${projectName}`, "info");
+        }
+        
+        memory.updateProjectMemory(projectName, targetPath, config.active || "unknown", {});
+        ctx.ui.notify(`Run /convex-status to verify`, "info");
+      } else {
+        ctx.ui.notify(`Error: ${result.stderr || result.stdout}`, "error");
+      }
+    },
+  });
+
   // ===== CONNECTION COMMANDS =====
 
   pi.registerCommand("convex-connect", {
