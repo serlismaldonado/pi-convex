@@ -72,6 +72,18 @@ CONVEX_DEPLOY_KEY='your-key' convex_deploy
 - No Node imports (fs, path) in Convex runtime
 - Always include `_creationTime` in tables
 
+## Deploy
+
+**IMPORTANT:** Always use `convex_dev with {"once": true}` or add `--once` flag to deploy commands. Never run `npx convex dev` without `--once` as it will block in watch mode.
+
+```bash
+# Correct (non-blocking)
+convex_dev with {"once": true}
+
+# Wrong (blocks in watch mode)
+npx convex dev
+```
+
 ## Quick Actions
 
 ```bash
@@ -81,8 +93,8 @@ convex_query with {"path": "table/list"}
 # Mutation
 convex_mutation with {"path": "table/create", "args": "{\"field\":\"value\"}"}
 
-# Deploy
-convex_deploy
+# Deploy (non-blocking)
+convex_dev with {"once": true}
 
 # Lint
 convex_lint
