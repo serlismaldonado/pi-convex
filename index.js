@@ -45,7 +45,6 @@ function saveProject(projectConfig) {
 }
 function findProjectInCwd(cwd) {
     try {
-        const pathModule = require("path");
         let dir = cwd;
         let maxDepth = 10;
         while (maxDepth > 0) {
@@ -97,8 +96,9 @@ function buildDeployCommand(projectName, teamName) {
     return { cmd: "npx convex dev", env: {} };
 }
 function execCommand(cmd, cwd, signal, env) {
-    return new Promise((resolve) => {
-        const child = require("child_process");
+    return new Promise(async (resolve) => {
+        const childModule = await import("node:child_process");
+        const child = childModule.default;
         // Inject auth env vars if configured
         const conn = getActiveConnection();
         const baseEnv = {};
@@ -215,7 +215,6 @@ export default [
                 ctx.ui.notify(`Creating directory: ${targetPath}`, "info");
                 fs.mkdirSync(targetPath, { recursive: true });
             }
-            const pathModule = require("path");
             const packageJsonPath = path.join(targetPath, "package.json");
             let packageJson = {};
             if (fs.existsSync(packageJsonPath)) {
@@ -618,7 +617,7 @@ export default [
             const url = conn?.type === "cloud"
                 ? `https://dashboard.convex.dev/deployment/${conn.url.replace("https://", "")}`
                 : "https://dashboard.convex.dev";
-            require("child_process").spawn("open", [url]);
+            (await import("node:child_process")).default.spawn("open", [url]);
             return {
                 content: [{ type: "text", text: `Opening: ${url}` }],
                 details: { url },

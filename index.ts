@@ -77,7 +77,7 @@ function saveProject(projectConfig: ProjectConfig): void {
 function findProjectInCwd(cwd: string): ProjectConfig | null {
   try {
     
-    const pathModule = require("path") as typeof import("path");
+    
     
     let dir = cwd;
     let maxDepth = 10;
@@ -139,8 +139,9 @@ function buildDeployCommand(projectName: string, teamName?: string): { cmd: stri
 }
 
 function execCommand(cmd: string, cwd: string, signal?: AbortSignal, env?: Record<string, string>): Promise<{ stdout: string; stderr: string; code: number }> {
-  return new Promise((resolve) => {
-    const child = require("child_process");
+  return new Promise(async (resolve) => {
+    const childModule = await import("node:child_process");
+    const child = childModule.default;
     
     // Inject auth env vars if configured
     const conn = getActiveConnection();
@@ -291,7 +292,7 @@ export default [
         fs.mkdirSync(targetPath, { recursive: true });
       }
       
-      const pathModule = require("path") as typeof import("path");
+      
       const packageJsonPath = path.join(targetPath, "package.json");
       let packageJson: Record<string, any> = {};
       
@@ -777,7 +778,7 @@ export default [
         ? `https://dashboard.convex.dev/deployment/${conn.url.replace("https://", "")}`
         : "https://dashboard.convex.dev";
       
-      require("child_process").spawn("open", [url]);
+      (await import("node:child_process")).default.spawn("open", [url]);
       
       return {
         content: [{ type: "text", text: `Opening: ${url}` }],
