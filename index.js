@@ -265,7 +265,7 @@ export default [
                     ctx.ui.notify(`Connection saved: ${projectName}`, "info");
                 }
                 memory.updateProjectMemory(projectName, targetPath, config.active || "unknown", {});
-                ctx.ui.notify(`Run /convex-status to verify`, "info");
+                ctx.ui.notify(`Run convex_status to verify`, "info");
             }
             else {
                 ctx.ui.notify(`Error: ${result.stderr || result.stdout}`, "error");
