@@ -2,7 +2,7 @@
 
 Pi extension for Convex - manage queries, mutations, deployment, and **learns about your project automatically**.
 
-![pi-convex](docs/screenshot.png)
+![pi-convex](https://raw.githubusercontent.com/serlismaldonado/pi-convex/main/docs/screenshot.png)
 
 ## Quick Start
 
