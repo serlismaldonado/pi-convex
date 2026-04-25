@@ -222,14 +222,17 @@ export default [
             }
             const packageJsonPath = require("path").join(targetPath, "package.json");
             if (!fs.existsSync(packageJsonPath)) {
-                ctx.ui.notify("Creating package.json...", "info");
+                ctx.ui.notify("Creating package.json with convex dependency...", "info");
                 fs.writeFileSync(packageJsonPath, JSON.stringify({
                     name: projectName,
                     version: "0.0.1",
                     private: true,
-                    scripts: { dev: "convex dev", deploy: "convex deploy", start: "convex dev" }
+                    scripts: { dev: "convex dev", deploy: "convex deploy", start: "convex dev" },
+                    dependencies: { convex: "^1.36.0" }
                 }, null, 2));
             }
+            ctx.ui.notify(`Installing dependencies...`, "info");
+            await execCommand("npm install", targetPath);
             ctx.ui.notify(`Initializing Convex in ${targetPath}...`, "info");
             let cmd = "npx convex dev --configure new --typecheck=disable --once";
             cmd += ` --project ${projectName}`;
@@ -239,9 +242,6 @@ export default [
                 cmd += " --dev-deployment cloud";
             const result = await execCommand(cmd, targetPath);
             if (result.code === 0) {
-                // Ensure convex is installed
-                ctx.ui.notify(`Installing convex dependency...`, "info");
-                await execCommand("npm install convex --save", targetPath);
                 ctx.ui.notify(`Project ${projectName} created!`, "info");
                 project = { path: targetPath, name: projectName };
                 saveProject(project);
