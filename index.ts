@@ -290,15 +290,27 @@ export default [
       }
       
       const packageJsonPath = require("path").join(targetPath, "package.json");
-      if (!fs.existsSync(packageJsonPath)) {
-        ctx.ui.notify("Creating package.json with convex dependency...", "info");
-        fs.writeFileSync(packageJsonPath, JSON.stringify({
+      let packageJson: Record<string, any> = {};
+      
+      if (fs.existsSync(packageJsonPath)) {
+        try {
+          packageJson = JSON.parse(fs.readFileSync(packageJsonPath, "utf-8"));
+        } catch {}
+      } else {
+        ctx.ui.notify("Creating package.json...", "info");
+        packageJson = {
           name: projectName,
           version: "0.0.1",
           private: true,
-          scripts: { dev: "convex dev", deploy: "convex deploy", start: "convex dev" },
-          dependencies: { convex: "^1.36.0" }
-        }, null, 2));
+          scripts: { dev: "convex dev", deploy: "convex deploy", start: "convex dev" }
+        };
+      }
+      
+      // Ensure convex is in dependencies
+      if (!packageJson.dependencies || !packageJson.dependencies.convex) {
+        packageJson.dependencies = { ...(packageJson.dependencies || {}), convex: "^1.36.0" };
+        fs.writeFileSync(packageJsonPath, JSON.stringify(packageJson, null, 2));
+        ctx.ui.notify("Added convex to package.json", "info");
       }
       
       ctx.ui.notify(`Installing dependencies...`, "info");
