@@ -1,6 +1,8 @@
 // Memory module for pi-convex extension
 // Stores learned information about Convex projects
 
+import fs from "node:fs";
+
 interface ProjectMemory {
   name: string;
   path: string;
@@ -20,7 +22,6 @@ const MEMORY_PATH = `${process.env.HOME}/.pi/agent/extensions/pi-convex/memory.j
 
 export function loadMemory(): MemoryStore {
   try {
-    const fs = require("fs") as typeof import("fs");
     if (!fs.existsSync(MEMORY_PATH)) {
       return { projects: {}, activeProject: null };
     }
@@ -32,15 +33,12 @@ export function loadMemory(): MemoryStore {
 }
 
 export function saveMemory(memory: MemoryStore): void {
-  const fs = require("fs") as typeof import("fs");
-  const fsPromises = fs.promises as typeof import("fs").promises;
-  
   const dir = `${process.env.HOME}/.pi/agent/extensions/pi-convex`;
   if (!fs.existsSync(dir)) {
     fs.mkdirSync(dir, { recursive: true });
   }
   
-  fsPromises.writeFile(MEMORY_PATH, JSON.stringify(memory, null, 2), "utf-8");
+  fs.promises.writeFile(MEMORY_PATH, JSON.stringify(memory, null, 2), "utf-8");
 }
 
 export function updateProjectMemory(
