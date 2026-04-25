@@ -195,7 +195,7 @@ export default function (pi: ExtensionAPI) {
       }
 
       if (!project) {
-        ctx.ui.notify("No project. Run /convex-project first", "error");
+        ctx.ui.notify("No project. Make sure you are in a Convex project directory", "error");
         return;
       }
 
@@ -356,7 +356,7 @@ export default [
         
         if (!addNew) {
           // List existing for selection
-          ctx.ui.notify("Use /convex-use to switch connections", "info");
+          ctx.ui.notify("Use /convex-connections to see all", "info");
           return;
         }
       }
@@ -419,47 +419,6 @@ export default [
     },
   });
 
-  pi.registerCommand("convex-use", {
-    description: "Switch between saved connections",
-    async handler(_args, ctx) {
-      if (!ctx.hasUI) {
-        ctx.ui.notify("Interactive mode required", "error");
-        return;
-      }
-
-      const names = Object.keys(config.connections);
-      
-      if (names.length === 0) {
-        ctx.ui.notify("No connections. Use /convex-connect", "info");
-        return;
-      }
-
-      if (names.length === 1) {
-        config.active = names[0] || null;
-        saveConfig();
-        ctx.ui.notify(`Using: ${names[0] || "unknown"}`, "info");
-        return;
-      }
-
-      const current = config.active || names[0];
-      ctx.ui.notify(`Current: ${current}. Select: ${names.join(", ")}`, "info");
-
-      const selected = await ctx.ui.input(
-        "Connection name:",
-        current || ""
-      );
-
-      if (!selected || !config.connections[selected]) {
-        ctx.ui.notify("Invalid connection", "error");
-        return;
-      }
-
-      config.active = selected;
-      saveConfig();
-      ctx.ui.notify(`Now using: ${selected}`, "info");
-    },
-  });
-
   pi.registerCommand("convex-connections", {
     description: "List all saved Convex connections",
     async handler(_args, ctx) {
@@ -479,107 +438,9 @@ export default [
 
       const info = config.active 
         ? `Active: ${config.active}\n\n${list}`
-        : `No active connection. Use /convex-use to select.\n\n${list}`;
+        : `No active connection.\n\n${list}`;
 
       ctx.ui.notify(info, "info");
-    },
-  });
-
-  pi.registerCommand("convex-disconnect", {
-    description: "Remove a Convex connection",
-    async handler(_args, ctx) {
-      if (!ctx.hasUI) {
-        ctx.ui.notify("Interactive mode required", "error");
-        return;
-      }
-
-      const names = Object.keys(config.connections);
-      
-      if (names.length === 0) {
-        ctx.ui.notify("No connections to remove", "info");
-        return;
-      }
-
-      const toRemove = await ctx.ui.input(
-        "Connection name to remove:",
-        names[0]
-      );
-
-      if (!toRemove || !config.connections[toRemove]) {
-        ctx.ui.notify("Invalid connection name", "error");
-        return;
-      }
-
-      const confirmed = await ctx.ui.confirm(
-        "Remove connection?",
-        `Delete: ${toRemove}`
-      );
-
-      if (!confirmed) {
-        ctx.ui.notify("Cancelled", "info");
-        return;
-      }
-
-      delete config.connections[toRemove];
-      
-      if (config.active === toRemove) {
-        const remaining = Object.keys(config.connections);
-        config.active = remaining[0] || null;
-      }
-      
-      saveConfig();
-      ctx.ui.notify(`Removed: ${toRemove}`, "info");
-    },
-  });
-
-  // ===== PROJECT COMMANDS =====
-
-  pi.registerCommand("convex-project", {
-    description: "Configure project path or auto-detect",
-    async handler(_args, ctx) {
-      if (!ctx.hasUI) {
-        ctx.ui.notify("Interactive mode required", "error");
-        return;
-      }
-
-      const detected = findProjectInCwd(ctx.cwd);
-      if (detected) {
-        ctx.ui.notify(`Detected: ${detected.name} (${detected.path})`, "info");
-      }
-
-      const useDetected = await ctx.ui.confirm(
-        "Use detected project?",
-        `Found: ${detected?.name || "none"}`
-      );
-
-      if (useDetected && detected) {
-        saveProject(detected);
-        project = detected;
-        ctx.ui.notify(`Project: ${detected.name}`, "info");
-        return;
-      }
-
-      const projectPath = await ctx.ui.input(
-        "Project path:",
-        project?.path || ctx.cwd || ""
-      );
-
-      if (!projectPath) {
-        ctx.ui.notify("Path required", "error");
-        return;
-      }
-
-      const projectName = await ctx.ui.input(
-        "Project name:",
-        project?.name || require("path").basename(projectPath)
-      );
-
-      const resolvedPath = projectPath.replace(/^~/, process.env.HOME || "");
-      
-      saveProject({ path: resolvedPath, name: projectName || "Project" });
-      project = { path: resolvedPath, name: projectName || "Project" };
-      
-      ctx.ui.notify(`Project: ${project.name}`, "info");
     },
   });
 
@@ -700,7 +561,7 @@ export default [
 
       if (!project) {
         return {
-          content: [{ type: "text", text: "No project. Run /convex-project or run from project dir." }],
+          content: [{ type: "text", text: "No project. cd to a Convex project directory." }],
           details: { error: "No project" },
         };
       }
@@ -734,7 +595,7 @@ export default [
 
       if (!project) {
         return {
-          content: [{ type: "text", text: "No project. Run /convex-project" }],
+          content: [{ type: "text", text: "No project. cd to a Convex project directory" }],
           details: { error: "No project" },
         };
       }
@@ -790,7 +651,7 @@ export default [
 
       if (!project) {
         return {
-          content: [{ type: "text", text: "No project. Run /convex-project" }],
+          content: [{ type: "text", text: "No project. cd to a Convex project directory" }],
           details: { error: "No project" },
         };
       }
@@ -871,9 +732,7 @@ export default [
         "Commands:",
         "/convex-connect - Add/switch connection",
         "/convex-connections - List all",
-        "/convex-disconnect - Remove one",
-        "/convex-use - Switch active",
-        "/convex-project - Set project",
+
       ].filter(Boolean).join("\n");
 
       return {
@@ -922,7 +781,7 @@ export default [
 
       if (!project) {
         return {
-          content: [{ type: "text", text: "No project. Run /convex-project" }],
+          content: [{ type: "text", text: "No project. cd to a Convex project directory" }],
           details: { error: "No project" },
         };
       }
@@ -983,7 +842,7 @@ export default [
 
       if (!project) {
         return {
-          content: [{ type: "text", text: "No project. Run /convex-project" }],
+          content: [{ type: "text", text: "No project. cd to a Convex project directory" }],
           details: { error: "No project" },
         };
       }
@@ -1126,7 +985,7 @@ export default [
     if (conn && project) {
       ctx.ui.notify(`Convex: ${config.active} | ${project.name}`, "info");
     } else if (conn) {
-      ctx.ui.notify(`Convex: ${config.active}. Run /convex-project`, "info");
+      ctx.ui.notify(`Convex: ${config.active}. cd to project dir`, "info");
     } else if (project) {
       ctx.ui.notify(`Project: ${project.name}. Run /convex-connect`, "info");
     } else {

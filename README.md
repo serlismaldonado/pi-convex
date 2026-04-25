@@ -22,10 +22,7 @@ Then in Pi:
 |---------|-------------|
 | `/convex-init` | Create a new Convex project (non-interactive, CI-friendly) |
 | `/convex-connect` | Add/switch connection (includes deploy key auth) |
-| `/convex-use` | Switch between saved connections |
 | `/convex-connections` | List all connections |
-| `/convex-disconnect` | Remove a connection |
-| `/convex-project` | Configure project path |
 | `/convex-setup` | Install ESLint plugin |
 
 ## Tools
@@ -176,7 +173,7 @@ Settings stored in:
 
 | Problem | Solution |
 |---------|----------|
-| "No project" | Run `/convex-project` or cd to project dir |
+| "No project" | cd to a Convex project directory |
 | "No connection" | Run `/convex-connect` |
 | Auth issues in CI | Set `CONVEX_DEPLOY_KEY` env var |
 | Anonymous mode for CI | Use `/convex-connect` and select "Yes" to anonymous |
