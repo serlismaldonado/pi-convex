@@ -289,7 +289,8 @@ export default [
         fs.mkdirSync(targetPath, { recursive: true });
       }
       
-      const packageJsonPath = require("path").join(targetPath, "package.json");
+      const pathModule = require("path") as typeof import("path");
+      const packageJsonPath = pathModule.join(targetPath, "package.json");
       let packageJson: Record<string, any> = {};
       
       if (fs.existsSync(packageJsonPath)) {

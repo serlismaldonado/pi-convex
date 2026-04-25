@@ -220,7 +220,8 @@ export default [
                 ctx.ui.notify(`Creating directory: ${targetPath}`, "info");
                 fs.mkdirSync(targetPath, { recursive: true });
             }
-            const packageJsonPath = require("path").join(targetPath, "package.json");
+            const pathModule = require("path");
+            const packageJsonPath = pathModule.join(targetPath, "package.json");
             let packageJson = {};
             if (fs.existsSync(packageJsonPath)) {
                 try {
