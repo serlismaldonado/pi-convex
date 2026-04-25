@@ -64,6 +64,16 @@ CONVEX_DEPLOY_KEY='your-key' convex_deploy
 
 ## Best Practices
 
+### Convex API (Common Mistakes)
+
+**IMPORTANT - Common errors to avoid:**
+- Use `.order("desc")` NOT `.orderBy("field")`
+- Import path is `../_generated/server` (one level up from files/)
+- Function paths use FULL path: `notes/mutations:create` NOT `notes:create`
+- Always verify existing structure before creating files
+
+### General Rules
+
 - Use `.withIndex()` instead of `.filter()`
 - Define `args` validators on all functions
 - Make mutations idempotent
