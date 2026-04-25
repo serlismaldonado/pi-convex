@@ -104,7 +104,7 @@ Creates project with:
 → Deploy key: (from dashboard.convex.dev)
 ```
 
-**Multiple projects?** Each project has its own deploy key. Save different connections with `/convex-connect` and switch between them with `/convex-use`.
+**Multiple projects?** Each project has its own deploy key. Save different connections with `/convex-connect`. The extension auto-detects the project from the current directory.
 
 ## Usage Examples
 
@@ -114,9 +114,6 @@ Creates project with:
 
 # Connect to existing
 /convex-connect
-
-# Switch projects
-/convex-use
 
 # Query all clients
 convex_query with {"path": "clients/list"}
