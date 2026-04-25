@@ -239,6 +239,9 @@ export default [
                 cmd += " --dev-deployment cloud";
             const result = await execCommand(cmd, targetPath);
             if (result.code === 0) {
+                // Ensure convex is installed
+                ctx.ui.notify(`Installing convex dependency...`, "info");
+                await execCommand("npm install convex --save", targetPath);
                 ctx.ui.notify(`Project ${projectName} created!`, "info");
                 project = { path: targetPath, name: projectName };
                 saveProject(project);
