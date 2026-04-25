@@ -1,6 +1,8 @@
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 import { Type } from "typebox";
 import * as memory from "./memory.js";
+import fs from "node:fs";
+import path from "node:path";
 
 interface ConvexConnection {
   url: string;
@@ -28,7 +30,7 @@ const PROJECT_PATH = CONFIG_DIR + "/project.json";
 
 function loadConfig(): ConvexConfig {
   try {
-    const fs = require("fs") as typeof import("fs");
+    
     if (!fs.existsSync(CONFIG_PATH)) return { connections: {}, active: null };
     
     const content = fs.readFileSync(CONFIG_PATH, "utf-8");
@@ -39,7 +41,7 @@ function loadConfig(): ConvexConfig {
 }
 
 function saveConfig(): void {
-  const fs = require("fs") as typeof import("fs");
+  
   const fsPromises = fs.promises as typeof import("fs").promises;
   
   if (!fs.existsSync(CONFIG_DIR)) {
@@ -51,7 +53,7 @@ function saveConfig(): void {
 
 function loadProject(): ProjectConfig | null {
   try {
-    const fs = require("fs") as typeof import("fs");
+    
     if (!fs.existsSync(PROJECT_PATH)) return null;
     
     const content = fs.readFileSync(PROJECT_PATH, "utf-8");
@@ -62,7 +64,7 @@ function loadProject(): ProjectConfig | null {
 }
 
 function saveProject(projectConfig: ProjectConfig): void {
-  const fs = require("fs") as typeof import("fs");
+  
   const fsPromises = fs.promises as typeof import("fs").promises;
   
   if (!fs.existsSync(CONFIG_DIR)) {
@@ -74,22 +76,22 @@ function saveProject(projectConfig: ProjectConfig): void {
 
 function findProjectInCwd(cwd: string): ProjectConfig | null {
   try {
-    const fs = require("fs") as typeof import("fs");
+    
     const pathModule = require("path") as typeof import("path");
     
     let dir = cwd;
     let maxDepth = 10;
     
     while (maxDepth > 0) {
-      const convexJson = pathModule.join(dir, "convex.json");
-      const packageJson = pathModule.join(dir, "package.json");
+      const convexJson = path.join(dir, "convex.json");
+      const packageJson = path.join(dir, "package.json");
       
       if (fs.existsSync(convexJson) && fs.existsSync(packageJson)) {
-        const name = pathModule.basename(dir);
+        const name = path.basename(dir);
         return { path: dir, name };
       }
       
-      const parent = pathModule.dirname(dir);
+      const parent = path.dirname(dir);
       if (parent === dir) break;
       dir = parent;
       maxDepth--;
@@ -199,7 +201,7 @@ export default function (pi: ExtensionAPI) {
         return;
       }
 
-      const fs = require("fs") as typeof import("fs");
+      
       const fsPromises = fs.promises as typeof import("fs").promises;
       
       const steps: string[] = [];
@@ -281,7 +283,7 @@ export default [
         deploymentType = useCloud ? "cloud" : "local";
       }
 
-      const fs = require("fs") as typeof import("fs");
+      
       const targetPath = ctx.cwd;
       
       if (!fs.existsSync(targetPath)) {
@@ -290,7 +292,7 @@ export default [
       }
       
       const pathModule = require("path") as typeof import("path");
-      const packageJsonPath = pathModule.join(targetPath, "package.json");
+      const packageJsonPath = path.join(targetPath, "package.json");
       let packageJson: Record<string, any> = {};
       
       if (fs.existsSync(packageJsonPath)) {
@@ -720,7 +722,7 @@ export default [
       let functionsCount = "";
       
       if (project) {
-        const fs = require("fs") as typeof import("fs");
+        
         const schemaPath = project.path + "/convex/schema.ts";
         if (fs.existsSync(schemaPath)) {
           const schema = fs.readFileSync(schemaPath, "utf-8");
@@ -805,7 +807,7 @@ export default [
       }
 
       const schemaPath = project.path + "/convex/schema.ts";
-      const fs = require("fs") as typeof import("fs");
+      
       
       if (!fs.existsSync(schemaPath)) {
         return {
@@ -865,7 +867,7 @@ export default [
         };
       }
 
-      const fs = require("fs") as typeof import("fs");
+      
       const eslintConfig = project.path + "/eslint.convex.mjs";
       const targetPath = params.path 
         ? project.path + "/" + params.path 
@@ -960,7 +962,7 @@ export default [
     const activeMemory = memory.getActiveProjectMemory();
     const conn = getActiveConnection();
     
-    const fs = require("fs") as typeof import("fs");
+    
     const skillTemplate = fs.readFileSync(skillPath + "/SKILL.md", "utf-8");
     
     const updatedSkill = skillTemplate

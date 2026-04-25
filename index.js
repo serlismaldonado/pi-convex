@@ -1,5 +1,7 @@
 import { Type } from "typebox";
 import * as memory from "./memory.js";
+import fs from "node:fs";
+import path from "node:path";
 let config = { connections: {}, active: null };
 let project = null;
 const CONFIG_DIR = `${process.env.HOME}/.pi/agent/extensions/pi-convex`;
@@ -7,7 +9,6 @@ const CONFIG_PATH = CONFIG_DIR + "/config.json";
 const PROJECT_PATH = CONFIG_DIR + "/project.json";
 function loadConfig() {
     try {
-        const fs = require("fs");
         if (!fs.existsSync(CONFIG_PATH))
             return { connections: {}, active: null };
         const content = fs.readFileSync(CONFIG_PATH, "utf-8");
@@ -18,7 +19,6 @@ function loadConfig() {
     }
 }
 function saveConfig() {
-    const fs = require("fs");
     const fsPromises = fs.promises;
     if (!fs.existsSync(CONFIG_DIR)) {
         fs.mkdirSync(CONFIG_DIR, { recursive: true });
@@ -27,7 +27,6 @@ function saveConfig() {
 }
 function loadProject() {
     try {
-        const fs = require("fs");
         if (!fs.existsSync(PROJECT_PATH))
             return null;
         const content = fs.readFileSync(PROJECT_PATH, "utf-8");
@@ -38,7 +37,6 @@ function loadProject() {
     }
 }
 function saveProject(projectConfig) {
-    const fs = require("fs");
     const fsPromises = fs.promises;
     if (!fs.existsSync(CONFIG_DIR)) {
         fs.mkdirSync(CONFIG_DIR, { recursive: true });
@@ -47,18 +45,17 @@ function saveProject(projectConfig) {
 }
 function findProjectInCwd(cwd) {
     try {
-        const fs = require("fs");
         const pathModule = require("path");
         let dir = cwd;
         let maxDepth = 10;
         while (maxDepth > 0) {
-            const convexJson = pathModule.join(dir, "convex.json");
-            const packageJson = pathModule.join(dir, "package.json");
+            const convexJson = path.join(dir, "convex.json");
+            const packageJson = path.join(dir, "package.json");
             if (fs.existsSync(convexJson) && fs.existsSync(packageJson)) {
-                const name = pathModule.basename(dir);
+                const name = path.basename(dir);
                 return { path: dir, name };
             }
-            const parent = pathModule.dirname(dir);
+            const parent = path.dirname(dir);
             if (parent === dir)
                 break;
             dir = parent;
@@ -152,7 +149,6 @@ export default function (pi) {
                 ctx.ui.notify("No project. Make sure you are in a Convex project directory", "error");
                 return;
             }
-            const fs = require("fs");
             const fsPromises = fs.promises;
             const steps = [];
             // 1. Install ESLint plugin
@@ -214,14 +210,13 @@ export default [
                 const useCloud = await ctx.ui.confirm("Cloud deployment?", "Yes = Convex Cloud, No = local dev server");
                 deploymentType = useCloud ? "cloud" : "local";
             }
-            const fs = require("fs");
             const targetPath = ctx.cwd;
             if (!fs.existsSync(targetPath)) {
                 ctx.ui.notify(`Creating directory: ${targetPath}`, "info");
                 fs.mkdirSync(targetPath, { recursive: true });
             }
             const pathModule = require("path");
-            const packageJsonPath = pathModule.join(targetPath, "package.json");
+            const packageJsonPath = path.join(targetPath, "package.json");
             let packageJson = {};
             if (fs.existsSync(packageJsonPath)) {
                 try {
@@ -577,7 +572,6 @@ export default [
             let tablesInfo = "";
             let functionsCount = "";
             if (project) {
-                const fs = require("fs");
                 const schemaPath = project.path + "/convex/schema.ts";
                 if (fs.existsSync(schemaPath)) {
                     const schema = fs.readFileSync(schemaPath, "utf-8");
@@ -650,7 +644,6 @@ export default [
                 };
             }
             const schemaPath = project.path + "/convex/schema.ts";
-            const fs = require("fs");
             if (!fs.existsSync(schemaPath)) {
                 return {
                     content: [{ type: "text", text: `Not found: ${schemaPath}` }],
@@ -702,7 +695,6 @@ export default [
                     details: { error: "No project" },
                 };
             }
-            const fs = require("fs");
             const eslintConfig = project.path + "/eslint.convex.mjs";
             const targetPath = params.path
                 ? project.path + "/" + params.path
@@ -786,7 +778,6 @@ export default [
         // Update skill template with current context
         const activeMemory = memory.getActiveProjectMemory();
         const conn = getActiveConnection();
-        const fs = require("fs");
         const skillTemplate = fs.readFileSync(skillPath + "/SKILL.md", "utf-8");
         const updatedSkill = skillTemplate
             .replace("{ACTIVE_PROJECT}", activeMemory ? `${activeMemory.name} (${activeMemory.path})` : "Not set")
