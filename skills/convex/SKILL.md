@@ -28,8 +28,7 @@ Convex extension for Pi - database, backend, queries, mutations, and deployment.
 | Command | Use Case |
 |---------|----------|
 | `/convex-init` | Create new project |
-| `/convex-connect` | Connect to project (with deploy key or anonymous) |
-| `/convex-connect` | Connect to project (with deploy key or anonymous) |
+| `/convex-connect` | Connect to existing project |
 | `/convex-setup` | Install ESLint plugin |
 
 ## Auth for CI

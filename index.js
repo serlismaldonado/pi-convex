@@ -771,25 +771,25 @@ export default [
         },
     });
     // ===== RESOURCES DISCOVERY (Skills) =====
-    pi.on("resources_discover", async (_event, _ctx) => {
+    pi.on("resources_discover", async (_event, ctx) => {
         const extensionDir = `${process.env.HOME}/.pi/agent/extensions/pi-convex`;
         const skillPath = extensionDir + "/skills/convex";
-        // Update skill template with current context
-        const activeMemory = memory.getActiveProjectMemory();
+        // Detect current project from cwd (not from saved memory)
+        const currentProject = findProjectInCwd(ctx.cwd) || project;
         const conn = getActiveConnection();
+        // Get memory for current project if exists
+        const projectMemory = currentProject
+            ? memory.getProjectContext(currentProject.name)
+            : null;
         const skillTemplate = fs.readFileSync(skillPath + "/SKILL.md", "utf-8");
+        // Check if we have memory for this project
+        const hasMemory = projectMemory && projectMemory !== "No memory for this project yet.";
         const updatedSkill = skillTemplate
-            .replace("{ACTIVE_PROJECT}", activeMemory ? `${activeMemory.name} (${activeMemory.path})` : "Not set")
+            .replace("{ACTIVE_PROJECT}", currentProject ? `${currentProject.name} (${currentProject.path})` : "Not set")
             .replace("{CONNECTION_INFO}", conn ? `${config.active} - ${conn.url} (${conn.type})` : "Not connected")
-            .replace("{TABLES_INFO}", activeMemory?.tables.length
-            ? activeMemory.tables.map((t) => `- ${t}`).join("\n")
-            : "No tables discovered yet")
-            .replace("{FUNCTIONS_INFO}", activeMemory?.functions.length
-            ? activeMemory.functions.slice(0, 10).map((f) => `- ${f}`).join("\n")
-            : "No functions discovered yet")
-            .replace("{NOTES}", activeMemory?.patterns.length
-            ? `Patterns learned:\n${activeMemory.patterns.map((p) => `- ${p}`).join("\n")}`
-            : "No patterns learned yet. Run convex_lint to learn.");
+            .replace("{TABLES_INFO}", hasMemory ? projectMemory : "No tables discovered yet")
+            .replace("{FUNCTIONS_INFO}", "No functions discovered yet")
+            .replace("{NOTES}", "Fresh project. Run convex_lint to learn patterns.");
         fs.writeFileSync(skillPath + "/SKILL.md", updatedSkill);
         return {
             skillPaths: [skillPath],
