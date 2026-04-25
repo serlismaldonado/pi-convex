@@ -302,7 +302,7 @@ export default [
       
       ctx.ui.notify(`Initializing Convex in ${targetPath}...`, "info");
       
-      let cmd = "npx convex dev --configure new --typecheck=disable";
+      let cmd = "npx convex dev --configure new --typecheck=disable --once";
       cmd += ` --project ${projectName}`;
       if (teamName) cmd += ` --team ${teamName}`;
       if (deploymentType === "cloud") cmd += " --dev-deployment cloud";
