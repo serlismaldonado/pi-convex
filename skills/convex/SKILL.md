@@ -28,32 +28,30 @@ Convex extension for Pi - database, backend, queries, mutations, and deployment.
 | Command | Use Case |
 |---------|----------|
 | `/convex-init` | Create new project |
-| `/convex-connect` | Connect to existing project |
-| `/convex-auth` | Authenticate (deploy key or anonymous) |
+| `/convex-connect` | Connect to project (with deploy key or anonymous) |
 | `/convex-project` | Set project path |
-| `/convex-use` | Switch connections |
+| `/convex-use` | Switch between saved connections |
 | `/convex-setup` | Install ESLint plugin |
 
 ## Auth for CI
 
 ### Anonymous Mode (no login required)
 ```
-/convex-auth
+/convex-connect
 → Use anonymous mode? Yes
 ```
 Sets `CONVEX_AGENT_MODE=anonymous`
 
 ### Deploy Key Mode
 ```
-/convex-auth
+/convex-connect
 → Use anonymous mode? No
-→ Key type: production
 → Deploy key: (paste key)
 ```
 
 Or via env:
 ```bash
-CONVEX_DEPLOY_KEY='your-key' /convex-auth
+CONVEX_DEPLOY_KEY='your-key' convex_deploy
 ```
 
 ## Best Practices

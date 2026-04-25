@@ -266,68 +266,6 @@ export default [
             }
         },
     });
-    // ===== AUTH COMMAND =====
-    pi.registerCommand("convex-auth", {
-        description: "Authenticate with Convex using deploy keys (non-interactive, CI-friendly)",
-        async handler(_args, ctx) {
-            const isCI = !process.stdin.isTTY;
-            if (!ctx.hasUI && !isCI) {
-                ctx.ui.notify("Interactive mode or CI required", "error");
-                return;
-            }
-            let authType;
-            let deployKey = "";
-            let keyType = "production";
-            if (isCI) {
-                // CI mode: use env vars
-                deployKey = process.env.CONVEX_DEPLOY_KEY || "";
-                authType = deployKey ? "deploy_key" : "anonymous";
-                ctx.ui.notify(`[CI] Auth type: ${authType}`, "info");
-            }
-            else {
-                // Interactive mode
-                const useAnonymous = await ctx.ui.confirm("Use anonymous mode?", "Anonymous = no auth needed, useful for CI agents");
-                if (useAnonymous) {
-                    authType = "anonymous";
-                    deployKey = "";
-                }
-                else {
-                    authType = "deploy_key";
-                    // Ask for key type
-                    const keyOptions = ["production", "preview", "admin"];
-                    const selected = await ctx.ui.select("Key type:", keyOptions);
-                    keyType = selected || "production";
-                    // Ask for the key
-                    deployKey = await ctx.ui.input(`Deploy key (${keyType}):`, "");
-                    if (!deployKey) {
-                        ctx.ui.notify("Deploy key required", "error");
-                        return;
-                    }
-                }
-            }
-            // Get active connection or create default
-            let connName = config.active || "default";
-            if (!config.connections[connName]) {
-                config.connections[connName] = {
-                    url: "",
-                    deployKey: "",
-                    type: "cloud",
-                    authType: null
-                };
-            }
-            // Update connection with auth info
-            config.connections[connName].authType = authType;
-            config.connections[connName].deployKey = deployKey;
-            saveConfig();
-            if (authType === "anonymous") {
-                ctx.ui.notify("Auth: Anonymous mode enabled (CONVEX_AGENT_MODE=anonymous)", "info");
-            }
-            else {
-                ctx.ui.notify(`Auth: Deploy key set (${keyType})`, "info");
-            }
-            ctx.ui.notify("Run /convex-status to verify", "info");
-        },
-    });
     // ===== CONNECTION COMMANDS =====
     pi.registerCommand("convex-connect", {
         description: "Add or switch to a Convex connection",

@@ -1,6 +1,6 @@
 # pi-convex
 
-Pi extension for Convex - manage queries, mutations, deployment, auth, and **learns about your project automatically**.
+Pi extension for Convex - manage queries, mutations, deployment, and **learns about your project automatically**.
 
 ## Quick Start
 
@@ -13,8 +13,7 @@ Then in Pi:
 ```
 1. /convex-init           # Create new project OR
 1. /convex-connect        # Connect to existing project
-2. /convex-auth           # Authenticate (optional - supports anonymous mode)
-3. convex_deploy          # Deploy!
+2. convex_deploy          # Deploy!
 ```
 
 ## Commands
@@ -22,9 +21,8 @@ Then in Pi:
 | Command | Description |
 |---------|-------------|
 | `/convex-init` | Create a new Convex project (non-interactive, CI-friendly) |
-| `/convex-connect` | Add/switch connection |
-| `/convex-auth` | Authenticate using deploy keys (non-interactive) |
-| `/convex-use` | Switch between connections |
+| `/convex-connect` | Add/switch connection (includes deploy key auth) |
+| `/convex-use` | Switch between saved connections |
 | `/convex-connections` | List all connections |
 | `/convex-disconnect` | Remove a connection |
 | `/convex-project` | Configure project path |
@@ -47,21 +45,22 @@ Then in Pi:
 
 ## Authentication
 
-### Interactive Mode
+### Interactive Mode (via `/convex-connect`)
 
 ```
-/convex-auth
+/convex-connect
+→ Connection name: my-app
+→ Is local? No
 → Use anonymous mode? No
-→ Key type: production
 → Deploy key: (paste from dashboard.convex.dev)
 ```
 
 ### Anonymous Mode (CI Agents)
 
-For CI agents that can't authenticate interactively:
+For CI agents that can't authenticate:
 
 ```
-/convex-auth
+/convex-connect
 → Use anonymous mode? Yes
 ```
 
@@ -70,10 +69,8 @@ This sets `CONVEX_AGENT_MODE=anonymous` for all commands.
 ### CI Mode (Env Vars)
 
 ```bash
-CONVEX_DEPLOY_KEY='your-key' /convex-auth
+CONVEX_DEPLOY_KEY='your-key' convex_deploy
 ```
-
-Or set in environment before running any convex command.
 
 ## Create New Project
 
@@ -107,11 +104,19 @@ Creates project with:
 → Deploy key: (from dashboard.convex.dev)
 ```
 
+**Multiple projects?** Each project has its own deploy key. Save different connections with `/convex-connect` and switch between them with `/convex-use`.
+
 ## Usage Examples
 
 ```bash
 # Create new project
 /convex-init
+
+# Connect to existing
+/convex-connect
+
+# Switch projects
+/convex-use
 
 # Query all clients
 convex_query with {"path": "clients/list"}
@@ -147,11 +152,6 @@ CONVEX_DEPLOY_KEY='your-key' convex_deploy
 CONVEX_AGENT_MODE=anonymous convex_deploy
 ```
 
-**Key types available:**
-- `production` - For production deployments
-- `preview` - For preview environments
-- `admin` - Full control over deployment
-
 ## Memory
 
 The extension automatically learns:
@@ -165,7 +165,7 @@ Access via `/skill:convex` to see learned context.
 ## Files
 
 Settings stored in:
-- `~/.pi/agent/extensions/pi-convex/config.json` - Connections + auth
+- `~/.pi/agent/extensions/pi-convex/config.json` - Connections + deploy keys
 - `~/.pi/agent/extensions/pi-convex/project.json` - Project path
 - `~/.pi/agent/extensions/pi-convex/memory.json` - Learned context
 
@@ -175,8 +175,8 @@ Settings stored in:
 |---------|----------|
 | "No project" | Run `/convex-project` or cd to project dir |
 | "No connection" | Run `/convex-connect` |
-| Auth issues in CI | Use `/convex-auth` or set `CONVEX_DEPLOY_KEY` env var |
-| Anonymous mode for CI | `/convex-auth` then "Yes" to anonymous |
+| Auth issues in CI | Set `CONVEX_DEPLOY_KEY` env var |
+| Anonymous mode for CI | Use `/convex-connect` and select "Yes" to anonymous |
 | Deploy interactive blocked | Use `convex_deploy` with `projectName` and `teamName` |
 | ARM64 deploy fails | Use `npx convex deploy --typecheck=disable` (no local dev) |
 
