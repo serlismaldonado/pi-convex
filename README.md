@@ -1,6 +1,6 @@
 # pi-convex
 
-Pi extension for Convex - manage queries, mutations, deployment, and **learns about your project automatically**.
+Pi extension for Convex - manage queries, mutations, deployment, auth, and **learns about your project automatically**.
 
 ## Quick Start
 
@@ -11,81 +11,19 @@ pi install npm:pi-convex
 Then in Pi:
 
 ```
-1. /convex-connect        # Connect to Convex
-2. /convex-project       # Set project path (or auto-detects)
-3. convex_deploy         # Deploy!
+1. /convex-init           # Create new project OR
+1. /convex-connect        # Connect to existing project
+2. /convex-auth           # Authenticate (optional - supports anonymous mode)
+3. convex_deploy          # Deploy!
 ```
-
-## Setup Flow (First Time)
-
-### 1. Connect to Convex
-
-```
-/convex-connect
-→ Connection name: my-app
-→ Is local? (y/n): n
-→ URL: https://xxx.convex.cloud
-→ Deploy key: (from dashboard.convex.dev)
-```
-
-### 2. Configure Project
-
-```
-/convex-project
-→ Use detected project? y
-```
-
-Or enter path manually: `/convex-project` → `~/projects/my-app`
-
-### 3. First Deploy
-
-**Interactive (local):**
-```bash
-npx convex dev --configure new --project my-project --team my-team
-npx convex deploy
-```
-
-**Non-interactive (CI):**
-```bash
-convex_deploy with {"projectName": "my-project", "teamName": "my-team"}
-```
-
-### 4. (Optional) Setup ESLint
-
-```
-/convex-setup
-convex_functions    # Learn all functions
-convex_lint         # Run lint
-```
-
-### 5. View Learned Context
-
-```
-/skill:convex
-```
-
-## CI / Non-Interactive Deploy
-
-The extension auto-detects non-interactive terminals (CI, scripts, etc.) and uses optimal flags:
-
-```bash
-# Auto-detected in CI
-npx convex deploy --typecheck=disable --project <name> --team <team>
-
-# With specific deployment
-CONVEX_DEPLOYMENT=<deployment-name> npx convex deploy --typecheck=disable
-```
-
-**Troubleshooting deploy:**
-- **ARM64/Android**: Deploy directly to cloud (local dev not supported)
-- **Interactive blocked**: Use `convex_deploy` with `projectName` and `teamName`
-- **TypeScript errors**: Uses `--typecheck=disable` automatically in CI
 
 ## Commands
 
 | Command | Description |
 |---------|-------------|
+| `/convex-init` | Create a new Convex project (non-interactive, CI-friendly) |
 | `/convex-connect` | Add/switch connection |
+| `/convex-auth` | Authenticate using deploy keys (non-interactive) |
 | `/convex-use` | Switch between connections |
 | `/convex-connections` | List all connections |
 | `/convex-disconnect` | Remove a connection |
@@ -107,9 +45,74 @@ CONVEX_DEPLOYMENT=<deployment-name> npx convex deploy --typecheck=disable
 | `convex_best_practices` | Show Convex best practices |
 | `convex_dashboard` | Open dashboard in browser |
 
+## Authentication
+
+### Interactive Mode
+
+```
+/convex-auth
+→ Use anonymous mode? No
+→ Key type: production
+→ Deploy key: (paste from dashboard.convex.dev)
+```
+
+### Anonymous Mode (CI Agents)
+
+For CI agents that can't authenticate interactively:
+
+```
+/convex-auth
+→ Use anonymous mode? Yes
+```
+
+This sets `CONVEX_AGENT_MODE=anonymous` for all commands.
+
+### CI Mode (Env Vars)
+
+```bash
+CONVEX_DEPLOY_KEY='your-key' /convex-auth
+```
+
+Or set in environment before running any convex command.
+
+## Create New Project
+
+### Interactive
+
+```
+/convex-init
+→ Project name: my-app
+→ Team name (from convex.cloud): my-team
+→ Cloud deployment? Yes
+```
+
+### Non-Interactive / CI
+
+```bash
+CONVEX_PROJECT_NAME=my-app CONVEX_TEAM_NAME=my-team /convex-init
+```
+
+Creates project with:
+- `npx convex dev --configure new --typecheck=disable --project <name> --team <team> --dev-deployment cloud`
+- Auto-configures as active project
+- Auto-saves connection
+
+## Connect to Existing Project
+
+```
+/convex-connect
+→ Connection name: my-app
+→ Is local? No
+→ Use anonymous mode? No
+→ Deploy key: (from dashboard.convex.dev)
+```
+
 ## Usage Examples
 
 ```bash
+# Create new project
+/convex-init
+
 # Query all clients
 convex_query with {"path": "clients/list"}
 
@@ -132,6 +135,23 @@ convex_lint
 convex_status
 ```
 
+## CI / Non-Interactive Mode
+
+The extension auto-detects non-interactive terminals (CI, scripts, etc.) and uses optimal flags:
+
+```bash
+# Auth via environment
+CONVEX_DEPLOY_KEY='your-key' convex_deploy
+
+# Anonymous mode (no auth needed)
+CONVEX_AGENT_MODE=anonymous convex_deploy
+```
+
+**Key types available:**
+- `production` - For production deployments
+- `preview` - For preview environments
+- `admin` - Full control over deployment
+
 ## Memory
 
 The extension automatically learns:
@@ -142,19 +162,10 @@ The extension automatically learns:
 
 Access via `/skill:convex` to see learned context.
 
-## Multiple Connections
-
-```
-/convex-connect        # Add new
-/convex-use            # Switch
-/convex-connections    # List all
-/convex-disconnect     # Remove
-```
-
 ## Files
 
 Settings stored in:
-- `~/.pi/agent/extensions/pi-convex/config.json` - Connections
+- `~/.pi/agent/extensions/pi-convex/config.json` - Connections + auth
 - `~/.pi/agent/extensions/pi-convex/project.json` - Project path
 - `~/.pi/agent/extensions/pi-convex/memory.json` - Learned context
 
@@ -164,9 +175,10 @@ Settings stored in:
 |---------|----------|
 | "No project" | Run `/convex-project` or cd to project dir |
 | "No connection" | Run `/convex-connect` |
-| Deploy interactive blocked | Use `convex_deploy` tool with projectName/teamName |
+| Auth issues in CI | Use `/convex-auth` or set `CONVEX_DEPLOY_KEY` env var |
+| Anonymous mode for CI | `/convex-auth` then "Yes" to anonymous |
+| Deploy interactive blocked | Use `convex_deploy` with `projectName` and `teamName` |
 | ARM64 deploy fails | Use `npx convex deploy --typecheck=disable` (no local dev) |
-| TypeScript errors | Extension uses `--typecheck=disable` automatically |
 
 ## License
 

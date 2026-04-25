@@ -1,11 +1,11 @@
 ---
 name: convex
-description: Routing skill for Convex work in this repo. Use when the user explicitly invokes the `convex` skill, asks which Convex workflow or skill to use, or says they are working on a Convex app without naming a specific task yet. Do not prefer this skill when the request is clearly about setting up Convex, authentication, components, migrations, or performance.
+description: Routing skill for Convex work. Use when working with Convex database, backend, or deployment.
 ---
 
-# Convex Context - Dynamic project knowledge
+# Convex
 
-Dynamic skill that loads Convex project context from memory.
+Convex extension for Pi - database, backend, queries, mutations, and deployment.
 
 ## Current Active Project
 
@@ -23,24 +23,66 @@ Dynamic skill that loads Convex project context from memory.
 
 {FUNCTIONS_INFO}
 
+## Commands
+
+| Command | Use Case |
+|---------|----------|
+| `/convex-init` | Create new project |
+| `/convex-connect` | Connect to existing project |
+| `/convex-auth` | Authenticate (deploy key or anonymous) |
+| `/convex-project` | Set project path |
+| `/convex-use` | Switch connections |
+| `/convex-setup` | Install ESLint plugin |
+
+## Auth for CI
+
+### Anonymous Mode (no login required)
+```
+/convex-auth
+→ Use anonymous mode? Yes
+```
+Sets `CONVEX_AGENT_MODE=anonymous`
+
+### Deploy Key Mode
+```
+/convex-auth
+→ Use anonymous mode? No
+→ Key type: production
+→ Deploy key: (paste key)
+```
+
+Or via env:
+```bash
+CONVEX_DEPLOY_KEY='your-key' /convex-auth
+```
+
 ## Best Practices
 
 - Use `.withIndex()` instead of `.filter()`
 - Define `args` validators on all functions
 - Make mutations idempotent
 - Use `Id<"table">` for references
+- Use `Doc<"table">` for documents
 - No Node imports (fs, path) in Convex runtime
+- Always include `_creationTime` in tables
 
-## CI / Non-Interactive Deploy
-
-When running in CI or non-interactive terminals, the extension auto-detects and uses:
+## Quick Actions
 
 ```bash
-# Non-interactive (auto-detected)
-npx convex deploy --typecheck=disable --project <name> --team <team>
+# Query
+convex_query with {"path": "table/list"}
 
-# With specific deployment
-CONVEX_DEPLOYMENT=<deployment-name> npx convex deploy --typecheck=disable
+# Mutation
+convex_mutation with {"path": "table/create", "args": "{\"field\":\"value\"}"}
+
+# Deploy
+convex_deploy
+
+# Lint
+convex_lint
+
+# Status
+convex_status
 ```
 
 ## Notes
