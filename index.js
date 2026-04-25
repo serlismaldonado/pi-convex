@@ -102,7 +102,22 @@ function buildDeployCommand(projectName, teamName) {
 function execCommand(cmd, cwd, signal, env) {
     return new Promise((resolve) => {
         const child = require("child_process");
-        const spawnEnv = { ...process.env, ...env };
+        // Inject auth env vars if configured
+        const conn = getActiveConnection();
+        const baseEnv = {};
+        for (const [k, v] of Object.entries(process.env)) {
+            if (v !== undefined)
+                baseEnv[k] = v;
+        }
+        const spawnEnv = { ...baseEnv };
+        if (conn?.authType === "anonymous") {
+            spawnEnv.CONVEX_AGENT_MODE = "anonymous";
+        }
+        else if (conn?.authType === "deploy_key" && conn.deployKey) {
+            spawnEnv.CONVEX_DEPLOY_KEY = conn.deployKey;
+        }
+        // Merge custom env
+        Object.assign(spawnEnv, env);
         const proc = child.spawn("bash", ["-c", cmd], { cwd, env: spawnEnv, stdio: isInteractive() ? undefined : "pipe" });
         let stdout = "";
         let stderr = "";
@@ -236,7 +251,8 @@ export default [
                     config.connections[projectName] = {
                         url: deploymentUrl,
                         deployKey: "",
-                        type: "cloud"
+                        type: "cloud",
+                        authType: null
                     };
                     config.active = projectName;
                     saveConfig();
@@ -248,6 +264,68 @@ export default [
             else {
                 ctx.ui.notify(`Error: ${result.stderr || result.stdout}`, "error");
             }
+        },
+    });
+    // ===== AUTH COMMAND =====
+    pi.registerCommand("convex-auth", {
+        description: "Authenticate with Convex using deploy keys (non-interactive, CI-friendly)",
+        async handler(_args, ctx) {
+            const isCI = !process.stdin.isTTY;
+            if (!ctx.hasUI && !isCI) {
+                ctx.ui.notify("Interactive mode or CI required", "error");
+                return;
+            }
+            let authType;
+            let deployKey = "";
+            let keyType = "production";
+            if (isCI) {
+                // CI mode: use env vars
+                deployKey = process.env.CONVEX_DEPLOY_KEY || "";
+                authType = deployKey ? "deploy_key" : "anonymous";
+                ctx.ui.notify(`[CI] Auth type: ${authType}`, "info");
+            }
+            else {
+                // Interactive mode
+                const useAnonymous = await ctx.ui.confirm("Use anonymous mode?", "Anonymous = no auth needed, useful for CI agents");
+                if (useAnonymous) {
+                    authType = "anonymous";
+                    deployKey = "";
+                }
+                else {
+                    authType = "deploy_key";
+                    // Ask for key type
+                    const keyOptions = ["production", "preview", "admin"];
+                    const selected = await ctx.ui.select("Key type:", keyOptions);
+                    keyType = selected || "production";
+                    // Ask for the key
+                    deployKey = await ctx.ui.input(`Deploy key (${keyType}):`, "");
+                    if (!deployKey) {
+                        ctx.ui.notify("Deploy key required", "error");
+                        return;
+                    }
+                }
+            }
+            // Get active connection or create default
+            let connName = config.active || "default";
+            if (!config.connections[connName]) {
+                config.connections[connName] = {
+                    url: "",
+                    deployKey: "",
+                    type: "cloud",
+                    authType: null
+                };
+            }
+            // Update connection with auth info
+            config.connections[connName].authType = authType;
+            config.connections[connName].deployKey = deployKey;
+            saveConfig();
+            if (authType === "anonymous") {
+                ctx.ui.notify("Auth: Anonymous mode enabled (CONVEX_AGENT_MODE=anonymous)", "info");
+            }
+            else {
+                ctx.ui.notify(`Auth: Deploy key set (${keyType})`, "info");
+            }
+            ctx.ui.notify("Run /convex-status to verify", "info");
         },
     });
     // ===== CONNECTION COMMANDS =====
@@ -279,15 +357,25 @@ export default [
                 return;
             }
             let deployKey = "";
+            let authType = null;
             if (!type) {
-                ctx.ui.notify("Get deploy key from: https://dashboard.convex.dev", "info");
-                const key = await ctx.ui.input("Deploy key:", "");
-                deployKey = key || "";
+                // Cloud/Self-hosted - ask for auth type
+                const useAnonymous = await ctx.ui.confirm("Use anonymous mode?", "Anonymous = no auth (CI agents). No = use deploy key.");
+                if (useAnonymous) {
+                    authType = "anonymous";
+                }
+                else {
+                    authType = "deploy_key";
+                    ctx.ui.notify("Get deploy key from: https://dashboard.convex.dev", "info");
+                    const key = await ctx.ui.input("Deploy key:", "");
+                    deployKey = key || "";
+                }
             }
             config.connections[name] = {
                 url,
                 deployKey,
                 type: type ? "local" : "cloud",
+                authType,
             };
             config.active = name;
             saveConfig();
