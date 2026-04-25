@@ -2,6 +2,8 @@
 
 Pi extension for Convex - manage queries, mutations, deployment, and **learns about your project automatically**.
 
+![pi-convex](docs/screenshot.png)
+
 ## Quick Start
 
 ```bash
