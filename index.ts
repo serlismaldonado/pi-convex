@@ -730,6 +730,7 @@ export default [
         functionsCount ? `\n${functionsCount}` : "",
         "",
         "Commands:",
+        "/convex-init - Create new project",
         "/convex-connect - Add/switch connection",
         "/convex-connections - List all",
 
