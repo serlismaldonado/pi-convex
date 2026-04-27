@@ -74,12 +74,23 @@ function getActiveConnection() {
 }
 function getApiUrl() {
     const conn = getActiveConnection();
-    if (!conn)
-        return "";
-    if (conn.type === "local") {
-        return conn.url;
+    if (conn) {
+        return conn.type === "local" ? conn.url : conn.url + "/api";
     }
-    return conn.url + "/api";
+    // Fallback to env vars — works without /convex-connect
+    if (process.env.CONVEX_URL)
+        return process.env.CONVEX_URL + "/api";
+    return "";
+}
+function getDeployKey() {
+    const conn = getActiveConnection();
+    if (conn?.deployKey)
+        return conn.deployKey;
+    return process.env.CONVEX_DEPLOY_KEY || "";
+}
+function buildAuthHeaders() {
+    const key = getDeployKey();
+    return key ? { Authorization: `Convex ${key}` } : {};
 }
 function isInteractive() {
     return process.stdin.isTTY === true;
@@ -367,21 +378,17 @@ export default [
             args: Type.Optional(Type.String({ description: "Args JSON (optional)" })),
         }),
         async execute(toolCallId, params, signal, onUpdate) {
-            const conn = getActiveConnection();
-            if (!conn) {
+            const apiUrl = getApiUrl();
+            if (!apiUrl) {
                 return {
-                    content: [{ type: "text", text: "No connection. Use /convex-connect" }],
+                    content: [{ type: "text", text: "No connection. Use /convex-connect or set CONVEX_URL env var." }],
                     details: { error: "No active connection" },
                 };
             }
             const args = params.args ? JSON.parse(params.args) : {};
-            const apiUrl = getApiUrl();
             const fetchOptions = {
                 method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    Authorization: conn.deployKey ? `Convex ${conn.deployKey}` : "",
-                },
+                headers: { "Content-Type": "application/json", ...buildAuthHeaders() },
                 body: JSON.stringify({ path: params.path, args, format: "json" }),
             };
             if (signal)
@@ -410,21 +417,17 @@ export default [
             args: Type.Optional(Type.String({ description: "Args JSON" })),
         }),
         async execute(toolCallId, params, signal, onUpdate) {
-            const conn = getActiveConnection();
-            if (!conn) {
+            const apiUrl = getApiUrl();
+            if (!apiUrl) {
                 return {
-                    content: [{ type: "text", text: "No connection. Use /convex-connect" }],
+                    content: [{ type: "text", text: "No connection. Use /convex-connect or set CONVEX_URL env var." }],
                     details: { error: "No active connection" },
                 };
             }
             const args = params.args ? JSON.parse(params.args) : {};
-            const apiUrl = getApiUrl();
             const fetchOptions = {
                 method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    Authorization: conn.deployKey ? `Convex ${conn.deployKey}` : "",
-                },
+                headers: { "Content-Type": "application/json", ...buildAuthHeaders() },
                 body: JSON.stringify({ path: params.path, args, format: "json" }),
             };
             if (signal)
@@ -533,21 +536,23 @@ export default [
                 if (detected)
                     project = detected;
             }
-            if (!project) {
+            // Works without local project if CONVEX_DEPLOYMENT is set
+            const execDir = project?.path || ctx.cwd;
+            const hasDeployment = !!process.env.CONVEX_DEPLOYMENT || !!getApiUrl();
+            if (!project && !hasDeployment) {
                 return {
-                    content: [{ type: "text", text: "No project. cd to a Convex project directory" }],
+                    content: [{ type: "text", text: "No project found. cd to a Convex project directory or set CONVEX_DEPLOYMENT env var." }],
                     details: { error: "No project" },
                 };
             }
-            const result = await execCommand("npx convex function-spec --json 2>/dev/null || npx convex function-spec 2>/dev/null || echo 'Run npx convex function-spec in project'", project.path, signal);
+            const result = await execCommand("npx convex function-spec --json 2>/dev/null || npx convex function-spec 2>/dev/null || echo 'Run npx convex function-spec in project'", execDir, signal);
             // Save to memory
             try {
                 const spec = JSON.parse(result.stdout);
                 const functions = spec.functions?.map((f) => f.identifier) || [];
-                const conn = getActiveConnection();
-                memory.updateProjectMemory(project.name, project.path, config.active || "unknown", {
-                    functions,
-                });
+                if (project) {
+                    memory.updateProjectMemory(project.name, project.path, config.active || "unknown", { functions });
+                }
                 onUpdate?.({ content: [{ type: "text", text: `Found ${functions.length} functions, saved to memory` }], details: {} });
             }
             catch {
@@ -783,27 +788,31 @@ export default [
     // ===== RESOURCES DISCOVERY (Skills) =====
     pi.on("resources_discover", async (_event, ctx) => {
         const extensionDir = `${process.env.HOME}/.pi/agent/extensions/pi-convex`;
-        const skillPath = extensionDir + "/skills/convex";
-        // Detect current project from cwd (not from saved memory)
+        const templatePath = extensionDir + "/skills/convex/SKILL.md";
+        const generatedSkillDir = extensionDir + "/skills/convex-runtime";
+        const generatedSkillPath = generatedSkillDir + "/SKILL.md";
         const currentProject = findProjectInCwd(ctx.cwd) || project;
         const conn = getActiveConnection();
-        // Get memory for current project if exists
         const projectMemory = currentProject
             ? memory.getProjectContext(currentProject.name)
             : null;
-        const skillTemplate = fs.readFileSync(skillPath + "/SKILL.md", "utf-8");
-        // Check if we have memory for this project
         const hasMemory = projectMemory && projectMemory !== "No memory for this project yet.";
+        // Read from template (never overwrite it)
+        const skillTemplate = fs.readFileSync(templatePath, "utf-8");
         const updatedSkill = skillTemplate
-            .replace("{PROJECT_PATH}", currentProject ? currentProject.path : "")
+            .replace("{PROJECT_PATH}", currentProject ? currentProject.path : ctx.cwd)
             .replace("{ACTIVE_PROJECT}", currentProject ? `${currentProject.name} (${currentProject.path})` : "Not set")
-            .replace("{CONNECTION_INFO}", conn ? `${config.active} - ${conn.url} (${conn.type})` : "Not connected")
+            .replace("{CONNECTION_INFO}", conn ? `${config.active} - ${conn.url} (${conn.type})` : process.env.CONVEX_URL ? `env: ${process.env.CONVEX_URL}` : "Not connected")
             .replace("{TABLES_INFO}", hasMemory ? projectMemory : "No tables discovered yet")
             .replace("{FUNCTIONS_INFO}", "No functions discovered yet")
             .replace("{NOTES}", "Fresh project. Run convex_lint to learn patterns.");
-        fs.writeFileSync(skillPath + "/SKILL.md", updatedSkill);
+        // Write to generated dir — never touch the original template
+        if (!fs.existsSync(generatedSkillDir)) {
+            fs.mkdirSync(generatedSkillDir, { recursive: true });
+        }
+        fs.writeFileSync(generatedSkillPath, updatedSkill);
         return {
-            skillPaths: [skillPath],
+            skillPaths: [generatedSkillDir],
         };
     });
     // ===== NOTIFICATIONS ON START =====
