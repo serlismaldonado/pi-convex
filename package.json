@@ -1,6 +1,6 @@
 {
   "name": "pi-convex",
-  "version": "1.5.5",
+  "version": "1.5.7",
   "description": "Pi extension for Convex Cloud - queries, mutations, project management, and best practices validation",
   "type": "module",
   "main": "index.ts",
